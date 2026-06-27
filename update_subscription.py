@@ -17,14 +17,18 @@ def fetch_links():
         with urllib.request.urlopen(req, timeout=10) as response:
             content = response.read().decode('utf-8').strip()
         
-        # Try base64 decoding (standard for V2Ray/Xray subscriptions)
-        try:
-            padded = content + '=' * (-len(content) % 4)
-            decoded = base64.b64decode(padded).decode('utf-8')
-            links = [line.strip() for line in decoded.split('\n') if line.strip()]
-        except Exception:
-            # Fallback to plain text links
+        # Check if the content is already plain links
+        if content.startswith(('vless://', 'vmess://', 'ss://', 'trojan://', 'http://', 'https://')):
             links = [line.strip() for line in content.split('\n') if line.strip()]
+        else:
+            # Try base64 decoding (standard for V2Ray/Xray subscriptions)
+            try:
+                padded = content + '=' * (-len(content) % 4)
+                decoded = base64.b64decode(padded).decode('utf-8')
+                links = [line.strip() for line in decoded.split('\n') if line.strip()]
+            except Exception:
+                # Fallback to plain text links
+                links = [line.strip() for line in content.split('\n') if line.strip()]
             
         return links
     except Exception as e:
