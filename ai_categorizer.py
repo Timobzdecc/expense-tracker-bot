@@ -328,10 +328,10 @@ async def parse_expense_from_image(image_bytes: bytes) -> Optional[list[dict]]:
 _CHAT_INSTRUCTION = """Ты — дружелюбный и умный AI-ассистент. Отвечай на русском языке.
 Будь полезным, кратким и по делу. Используй эмодзи для выразительности.
 Ты встроен в Telegram-бота для учёта расходов, но в режиме чата ты — универсальный помощник.
-Можешь помогать с любыми вопросами: советы, информация, расчёты, идеи и т.д.
 
-ВАЖНО: Если тебе нужно поразмышлять, проанализировать запрос или спланировать ответ, делай это СТРОГО внутри тегов <thought> и </thought>. 
-Свой финальный красивый ответ (то, что увидит пользователь) пиши только ПОСЛЕ закрывающего тега </thought>."""
+ВАЖНО: Твой ответ ВСЕГДА должен состоять из двух частей, разделённых строкой "FINAL_ANSWER:".
+Всё, что до "FINAL_ANSWER:" — это твои размышления, черновики и планирование.
+Всё, что после "FINAL_ANSWER:" — это финальный красивый ответ, который увидит пользователь."""
 
 chat_model = genai.GenerativeModel(
     model_name=GEMINI_MODEL,
@@ -390,27 +390,26 @@ async def chat_reply(user_id: int, text: str) -> str:
 
         reply = response.text.strip()
 
-        # Вырезаем "мысли" модели, если она их написала в тегах <thought>
-        reply = re.sub(r"<thought>.*?</thought>", "", reply, flags=re.DOTALL | re.IGNORECASE).strip()
-        
-        # Защита от незакрытого тега
-        reply = re.sub(r"<thought>.*", "", reply, flags=re.DOTALL | re.IGNORECASE).strip()
-
-        # Фоллбэк: если модель забыла теги, но вывела черновик "мыслей" (звёздочки в начале)
-        lines = reply.split('\n')
-        cleaned = []
-        in_thought = True
-        for line in lines:
-            stripped = line.strip()
-            if in_thought and (stripped.startswith('*') or stripped == '' or stripped.startswith('"')):
-                continue
-            in_thought = False
-            cleaned.append(line)
-        if cleaned:
-            reply = '\n'.join(cleaned).strip()
-
-        # Убираем возможные остатки любых тегов
-        reply = re.sub(r"</?thought>", "", reply, flags=re.IGNORECASE).strip()
+        # Разделяем мысли и ответ по маркеру
+        if "FINAL_ANSWER:" in reply:
+            reply = reply.split("FINAL_ANSWER:")[-1].strip()
+        else:
+            # Если модель всё же забыла маркер, применяем жёсткий фоллбэк:
+            # удаляем все строки до первой пустой строки, если они похожи на "мысли"
+            lines = reply.split('\n')
+            cleaned = []
+            in_thought = True
+            for line in lines:
+                stripped = line.strip()
+                if in_thought and (stripped == "" or stripped.startswith("*") or stripped.startswith("The user said") or stripped.startswith("Friendly, smart AI") or stripped.startswith("Universal assistant")):
+                    continue
+                if in_thought and not stripped.startswith("*") and not stripped == "":
+                    # Возможно это начало нормального ответа
+                    in_thought = False
+                cleaned.append(line)
+            
+            if cleaned:
+                reply = '\n'.join(cleaned).strip()
 
         # Добавляем ответ в историю
         history.append({"role": "model", "parts": [{"text": reply}]})
