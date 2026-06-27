@@ -1,0 +1,38 @@
+package com.example.expensetracker.ui.utils
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.expensetracker.ExpenseTrackerApp
+import com.example.expensetracker.ui.addexpense.AddExpenseViewModel
+import com.example.expensetracker.ui.dashboard.DashboardViewModel
+import com.example.expensetracker.ui.settings.SettingsViewModel
+import com.example.expensetracker.data.ai.GeminiService
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+
+class AppViewModelFactory : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        val app = ExpenseTrackerApp.instance
+        
+        // Lazy initialize GeminiService with current API key
+        val getGeminiService = {
+            // In a real app we might want to observe this, but for simplicity here we read once
+            val apiKey = runBlocking { app.settingsManager.apiKeyFlow.first() } ?: ""
+            val modelName = runBlocking { app.settingsManager.modelFlow.first() }
+            GeminiService(apiKey = apiKey, modelName = modelName)
+        }
+        
+        return when {
+            modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
+                SettingsViewModel(app.settingsManager) as T
+            }
+            modelClass.isAssignableFrom(DashboardViewModel::class.java) -> {
+                DashboardViewModel(app.expenseRepository) as T
+            }
+            modelClass.isAssignableFrom(AddExpenseViewModel::class.java) -> {
+                AddExpenseViewModel(app.expenseRepository, getGeminiService()) as T
+            }
+            else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+        }
+    }
+}

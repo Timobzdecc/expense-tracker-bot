@@ -9,3 +9,4 @@ import kotlinx.serialization.Serializable
 @Serializable data object BudgetsNav : NavKey
 @Serializable data object ChatNav : NavKey
 @Serializable data object SettingsNav : NavKey
+@Serializable data object AddExpenseNav : NavKey
