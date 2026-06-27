@@ -32,16 +32,15 @@ fun ChatScreen(
     val listState = rememberLazyListState()
 
     // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.messages.size - 1)
+    LaunchedEffect(uiState.messages.size, uiState.isTyping) {
+        if (uiState.messages.isNotEmpty() || uiState.isTyping) {
+            listState.animateScrollToItem(0)
         }
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .imePadding()
             .padding(16.dp)
     ) {
         Text(
@@ -56,15 +55,16 @@ fun ChatScreen(
                 .weight(1f)
                 .fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            reverseLayout = true
         ) {
-            items(uiState.messages) { message ->
-                ChatBubble(message)
-            }
             if (uiState.isTyping) {
                 item {
                     ChatBubble(ChatMessage("...", isUser = false))
                 }
+            }
+            items(uiState.messages.reversed()) { message ->
+                ChatBubble(message)
             }
         }
 
