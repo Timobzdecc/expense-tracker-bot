@@ -26,12 +26,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import com.example.expensetracker.*
 import com.example.expensetracker.R
+import com.example.expensetracker.ui.budgets.BudgetsScreen
+import com.example.expensetracker.ui.budgets.BudgetsViewModel
 import com.example.expensetracker.ui.chat.ChatScreen
 import com.example.expensetracker.ui.chat.ChatViewModel
 import com.example.expensetracker.ui.dashboard.DashboardScreen
 import com.example.expensetracker.ui.dashboard.DashboardViewModel
+import com.example.expensetracker.ui.history.HistoryScreen
+import com.example.expensetracker.ui.history.HistoryViewModel
 import com.example.expensetracker.ui.settings.SettingsScreen
 import com.example.expensetracker.ui.settings.SettingsViewModel
+import com.example.expensetracker.ui.statistics.StatisticsScreen
+import com.example.expensetracker.ui.statistics.StatisticsViewModel
 import com.example.expensetracker.ui.utils.AppViewModelFactory
 
 enum class AppRoute(val titleResId: Int, val icon: ImageVector, val navKey: NavKey) {
@@ -73,6 +79,18 @@ fun MainScreen(
                     val viewModel: DashboardViewModel = viewModel(factory = factory)
                     DashboardScreen(viewModel = viewModel, onAddExpenseClick = onAddExpenseClick)
                 }
+                AppRoute.STATISTICS -> {
+                    val viewModel: StatisticsViewModel = viewModel(factory = factory)
+                    StatisticsScreen(viewModel = viewModel)
+                }
+                AppRoute.HISTORY -> {
+                    val viewModel: HistoryViewModel = viewModel(factory = factory)
+                    HistoryScreen(viewModel = viewModel)
+                }
+                AppRoute.BUDGETS -> {
+                    val viewModel: BudgetsViewModel = viewModel(factory = factory)
+                    BudgetsScreen(viewModel = viewModel)
+                }
                 AppRoute.CHAT -> {
                     val viewModel: ChatViewModel = viewModel(factory = factory)
                     ChatScreen(viewModel = viewModel)
@@ -80,9 +98,6 @@ fun MainScreen(
                 AppRoute.SETTINGS -> {
                     val viewModel: SettingsViewModel = viewModel(factory = factory)
                     SettingsScreen(viewModel = viewModel)
-                }
-                else -> {
-                    Text("Content for ${selectedRoute.name} (WIP)", modifier = Modifier.padding(16.dp))
                 }
             }
         }

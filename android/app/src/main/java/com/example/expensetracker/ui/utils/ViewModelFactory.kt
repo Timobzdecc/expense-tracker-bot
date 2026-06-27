@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.expensetracker.ExpenseTrackerApp
 import com.example.expensetracker.ui.addexpense.AddExpenseViewModel
+import com.example.expensetracker.ui.budgets.BudgetsViewModel
 import com.example.expensetracker.ui.chat.ChatViewModel
 import com.example.expensetracker.ui.dashboard.DashboardViewModel
+import com.example.expensetracker.ui.history.HistoryViewModel
 import com.example.expensetracker.ui.settings.SettingsViewModel
+import com.example.expensetracker.ui.statistics.StatisticsViewModel
 import com.example.expensetracker.data.ai.GeminiService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -34,6 +37,15 @@ class AppViewModelFactory : ViewModelProvider.Factory {
             }
             modelClass.isAssignableFrom(ChatViewModel::class.java) -> {
                 ChatViewModel(getGeminiService()) as T
+            }
+            modelClass.isAssignableFrom(BudgetsViewModel::class.java) -> {
+                BudgetsViewModel(app.budgetRepository, app.expenseRepository) as T
+            }
+            modelClass.isAssignableFrom(HistoryViewModel::class.java) -> {
+                HistoryViewModel(app.expenseRepository) as T
+            }
+            modelClass.isAssignableFrom(StatisticsViewModel::class.java) -> {
+                StatisticsViewModel(app.expenseRepository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
