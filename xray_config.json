@@ -1,0 +1,48 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "port": 8080,
+      "protocol": "http",
+      "settings": {
+        "timeout": 360
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "gateway3.dealup.online",
+            "port": 443,
+            "users": [
+              {
+                "id": "c227b0f6-7194-4f78-8d7b-5abe71d4993e",
+                "encryption": "none",
+                "level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "gateway3.dealup.online",
+          "fingerprint": "firefox"
+        },
+        "wsSettings": {
+          "path": "/version",
+          "headers": {
+            "Host": "gateway3.dealup.online"
+          }
+        }
+      }
+    }
+  ]
+}

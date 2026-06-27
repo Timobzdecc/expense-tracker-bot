@@ -1,18 +1,19 @@
 version: '3.8'
 
 services:
-  gost:
-    image: ginuerzh/gost
-    container_name: gost_tunnel
+  xray:
+    image: teddysun/xray
+    container_name: xray_tunnel
     restart: unless-stopped
-    command: -L :8080 -F ss://chacha20-ietf-poly1305:0iKeDnnDzLPDXqe7NU6axg@212.147.232.192:1080
+    volumes:
+      - ./xray_config.json:/etc/xray/config.json
 
   bot:
     build: .
     container_name: expense_tracker_bot
     restart: unless-stopped
     depends_on:
-      - gost
+      - xray
     volumes:
       - ./expenses.db:/app/expenses.db
     env_file:
