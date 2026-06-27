@@ -1,6 +1,7 @@
 package com.example.expensetracker.ui.main
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
@@ -51,6 +52,7 @@ enum class AppRoute(val titleResId: Int, val icon: ImageVector, val navKey: NavK
     SETTINGS(R.string.nav_settings, Icons.Filled.Settings, SettingsNav)
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MainScreen(
     onItemClick: (NavKey) -> Unit,
