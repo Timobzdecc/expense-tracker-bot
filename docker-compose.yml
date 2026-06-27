@@ -1,10 +1,18 @@
 version: '3.8'
 
 services:
+  gost:
+    image: ginuerzh/gost
+    container_name: gost_tunnel
+    restart: unless-stopped
+    command: -L :8080 -F ss://chacha20-ietf-poly1305:It2NiBcsHvvhqU5aGEZ2pI@5.253.59.156:32140
+
   bot:
     build: .
     container_name: expense_tracker_bot
     restart: unless-stopped
+    depends_on:
+      - gost
     volumes:
       - ./expenses.db:/app/expenses.db
     env_file:
