@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: set up JDK 17
         uses: actions/setup-java@v4
@@ -32,8 +34,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Get Commit Count
+        id: vars
+        run: echo "commit_count=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+        working-directory: ${{ github.workspace }}
+
       - name: Build Release APK
-        run: ./gradlew assembleRelease -PversionCode=${{ github.run_number }} -PversionName="1.0.${{ github.run_number }}"
+        run: ./gradlew assembleRelease -PversionCode=${{ steps.vars.outputs.commit_count }} -PversionName="1.0.3"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -46,8 +53,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: android/app/build/outputs/apk/release/app-release.apk
-          tag_name: "android-v${{ github.run_number }}"
-          name: "Android Release v${{ github.run_number }}"
+          tag_name: "android-v${{ steps.vars.outputs.commit_count }}"
+          name: "Android Release 1.0.3 (${{ steps.vars.outputs.commit_count }})"
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

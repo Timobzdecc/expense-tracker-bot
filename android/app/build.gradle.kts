@@ -14,7 +14,7 @@ android {
         targetSdk = 36
         val ciVersionCode = (project.findProperty("versionCode") as? String)?.toInt()
         versionCode = ciVersionCode ?: 999999
-        versionName = (project.findProperty("versionName") as? String) ?: "1.0.0-local"
+        versionName = (project.findProperty("versionName") as? String) ?: "1.0.3-local"
     }
 
     signingConfigs {
