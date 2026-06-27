@@ -14,14 +14,20 @@ env_path = os.path.join(base_dir, ".env")
 if os.path.exists(env_path):
     load_dotenv(env_path)
 
-def get_or_prompt(key: str, prompt_text: str, default: str = "") -> str:
-    val = os.getenv(key, "").strip()
-    if not val:
+def get_or_prompt(key: str, prompt_text: str, default: str = "", allow_empty: bool = False) -> str:
+    # Проверяем, есть ли переменная (даже если она пустая, но задана)
+    if key in os.environ:
+        return os.environ[key].strip()
+    
+    val = os.getenv(key, "")
+    if not val and key not in os.environ:
         print()
         if default:
             val = input(f"{prompt_text} [Нажми Enter для {default}]: ").strip()
             if not val:
                 val = default
+        elif allow_empty:
+            val = input(f"{prompt_text} [Нажми Enter, чтобы пропустить]: ").strip()
         else:
             while not val:
                 val = input(f"{prompt_text}: ").strip()
@@ -31,7 +37,10 @@ def get_or_prompt(key: str, prompt_text: str, default: str = "") -> str:
             f.write(f"{key}={val}\n")
         
         os.environ[key] = val
-        print(f"✅ {key} сохранён в .env (в папке {base_dir})")
+        if val:
+            print(f"✅ {key} сохранён в .env (в папке {base_dir})")
+        else:
+            print(f"✅ {key} пропущен (оставлен пустым)")
     
     return val
 
@@ -41,7 +50,7 @@ print("🌟 Expense Tracker Bot инициализируется...")
 BOT_TOKEN = get_or_prompt("BOT_TOKEN", "🔑 Введите токен Telegram-бота (можно получить у @BotFather в ТГ)")
 
 # Белый список пользователей (Telegram ID через запятую)
-_raw_users = get_or_prompt("ALLOWED_USERS", "🛡 Введите ваш Telegram ID, чтобы никто чужой не мог использовать бота (узнать ID можно у @userinfobot)")
+_raw_users = get_or_prompt("ALLOWED_USERS", "🛡 Введите ваш Telegram ID, чтобы никто чужой не мог использовать бота", allow_empty=True)
 ALLOWED_USERS: set[int] = (
     {int(uid.strip()) for uid in _raw_users.split(",") if uid.strip()}
     if _raw_users else set()
