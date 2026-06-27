@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Image
@@ -91,6 +92,7 @@ fun AddExpenseScreen(
                 }
             )
         },
+        contentWindowInsets = WindowInsets.statusBars,
         modifier = modifier
     ) { paddingValues ->
         Column(
