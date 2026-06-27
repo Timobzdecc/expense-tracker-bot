@@ -101,6 +101,14 @@ fun SettingsScreen(
         ) {
             Text(if (isCheckingUpdate) "Проверка..." else "Проверить обновления")
         }
+        
+        Text(
+            text = "Версия: ${com.example.expensetracker.BuildConfig.VERSION_NAME} (${com.example.expensetracker.BuildConfig.VERSION_CODE})",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 
     if (showUpdateDialog && updateInfo != null) {

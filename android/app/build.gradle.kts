@@ -12,9 +12,16 @@ android {
         applicationId = "com.example.expensetracker"
         minSdk = 26
         targetSdk = 36
+        val gitCommitCount = try {
+            providers.exec {
+                commandLine("git", "rev-list", "--count", "HEAD")
+            }.standardOutput.asText.get().trim().toInt()
+        } catch (e: Exception) {
+            48
+        }
         val ciVersionCode = (project.findProperty("versionCode") as? String)?.toInt()
-        versionCode = ciVersionCode ?: 999999
-        versionName = (project.findProperty("versionName") as? String) ?: "1.0.3-local"
+        versionCode = ciVersionCode ?: gitCommitCount
+        versionName = (project.findProperty("versionName") as? String) ?: "1.0.3"
     }
 
     signingConfigs {
