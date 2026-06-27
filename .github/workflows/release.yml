@@ -1,4 +1,4 @@
-name: Build DEB and upload
+name: Build and Release
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-linux-deb:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -64,8 +64,32 @@ jobs:
           
           dpkg-deb --build package expensebot_1.0.0_amd64.deb
 
-      - name: Upload to Release
+      - name: Upload DEB to Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload v1.0.0 expensebot_1.0.0_amd64.deb --clobber
+
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller --onefile --name ExpenseBot bot.py
+
+      - name: Upload EXE to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v1.0.0 dist/ExpenseBot.exe --clobber
