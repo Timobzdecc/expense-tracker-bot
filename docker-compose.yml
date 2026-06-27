@@ -5,7 +5,7 @@ services:
     image: ginuerzh/gost
     container_name: gost_tunnel
     restart: unless-stopped
-    command: -L :8080 -F ss://chacha20-ietf-poly1305:It2NiBcsHvvhqU5aGEZ2pI@5.253.59.156:32140
+    command: -L :8080 -F ss://chacha20-ietf-poly1305:0iKeDnnDzLPDXqe7NU6axg@212.147.232.192:1080
 
   bot:
     build: .
