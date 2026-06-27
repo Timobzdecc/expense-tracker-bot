@@ -36,6 +36,14 @@ fun AddExpenseScreen(
         }
     }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(null)
+        }
+    }
+
     // Navigate back automatically on success
     LaunchedEffect(uiState.success) {
         if (uiState.success) {
@@ -111,7 +119,7 @@ fun AddExpenseScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { cameraLauncher.launch(null) },
+                onClick = { cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,

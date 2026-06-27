@@ -30,7 +30,7 @@ class AppViewModelFactory : ViewModelProvider.Factory {
                 AddExpenseViewModel(app.expenseRepository, geminiService) as T
             }
             modelClass.isAssignableFrom(ChatViewModel::class.java) -> {
-                ChatViewModel(geminiService) as T
+                ChatViewModel(geminiService, app.chatRepository) as T
             }
             modelClass.isAssignableFrom(BudgetsViewModel::class.java) -> {
                 BudgetsViewModel(app.budgetRepository, app.expenseRepository) as T

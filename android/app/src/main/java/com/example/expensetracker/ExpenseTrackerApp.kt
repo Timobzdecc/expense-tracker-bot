@@ -17,6 +17,9 @@ class ExpenseTrackerApp : Application() {
     lateinit var budgetRepository: BudgetRepository
         private set
 
+    lateinit var chatRepository: com.example.expensetracker.data.repository.ChatRepository
+        private set
+
     lateinit var settingsManager: SettingsManager
         private set
 
@@ -27,6 +30,7 @@ class ExpenseTrackerApp : Application() {
         database = AppDatabase.getInstance(this)
         expenseRepository = ExpenseRepository(database.expenseDao())
         budgetRepository = BudgetRepository(database.budgetDao())
+        chatRepository = com.example.expensetracker.data.repository.ChatRepository(database.chatDao())
         settingsManager = SettingsManager(this)
     }
 
