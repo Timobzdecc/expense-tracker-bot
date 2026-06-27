@@ -41,6 +41,7 @@ fun ChatScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .imePadding()
             .padding(16.dp)
     ) {
         Text(
