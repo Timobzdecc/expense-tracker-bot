@@ -24,6 +24,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -72,6 +78,19 @@ fun MainScreen(
 ) {
     var selectedRoute by rememberSaveable { mutableStateOf(AppRoute.DASHBOARD) }
     val isKeyboardVisible = rememberIsKeyboardVisible()
+    
+    val context = LocalContext.current
+    var showUpdateDialog by rememberSaveable { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
+    val updateManager = remember { UpdateManager(context) }
+
+    LaunchedEffect(Unit) {
+        val info = updateManager.checkForUpdates()
+        if (info != null) {
+            updateInfo = info
+            showUpdateDialog = true
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -141,5 +160,26 @@ fun MainScreen(
                 }
             }
         }
+    }
+
+    if (showUpdateDialog && updateInfo != null) {
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            title = { Text("Доступно обновление") },
+            text = { Text("Доступна версия ${updateInfo!!.newVersionCode}.\n\nЧто нового:\n${updateInfo!!.releaseNotes}") },
+            confirmButton = {
+                Button(onClick = {
+                    showUpdateDialog = false
+                    updateManager.downloadAndInstallUpdate(updateInfo!!.downloadUrl)
+                }) {
+                    Text("Обновить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUpdateDialog = false }) {
+                    Text("Позже")
+                }
+            }
+        )
     }
 }

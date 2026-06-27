@@ -9,7 +9,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.launch
 import com.example.expensetracker.R
+import com.example.expensetracker.UpdateManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -18,6 +25,13 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val updateManager = remember { UpdateManager(context) }
+    
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<UpdateManager.UpdateInfo?>(null) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -67,5 +81,46 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
         }
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        OutlinedButton(
+            onClick = {
+                isCheckingUpdate = true
+                coroutineScope.launch {
+                    val info = updateManager.checkForUpdates()
+                    if (info != null) {
+                        updateInfo = info
+                        showUpdateDialog = true
+                    }
+                    isCheckingUpdate = false
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isCheckingUpdate
+        ) {
+            Text(if (isCheckingUpdate) "Проверка..." else "Проверить обновления")
+        }
+    }
+
+    if (showUpdateDialog && updateInfo != null) {
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            title = { Text("Доступно обновление") },
+            text = { Text("Доступна версия ${updateInfo!!.newVersionCode}.\n\nЧто нового:\n${updateInfo!!.releaseNotes}") },
+            confirmButton = {
+                Button(onClick = {
+                    showUpdateDialog = false
+                    updateManager.downloadAndInstallUpdate(updateInfo!!.downloadUrl)
+                }) {
+                    Text("Скачать и установить")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUpdateDialog = false }) {
+                    Text("Позже")
+                }
+            }
+        )
     }
 }
