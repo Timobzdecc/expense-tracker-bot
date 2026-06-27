@@ -26,8 +26,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import com.example.expensetracker.*
 import com.example.expensetracker.R
+import com.example.expensetracker.ui.chat.ChatScreen
+import com.example.expensetracker.ui.chat.ChatViewModel
 import com.example.expensetracker.ui.dashboard.DashboardScreen
 import com.example.expensetracker.ui.dashboard.DashboardViewModel
+import com.example.expensetracker.ui.settings.SettingsScreen
+import com.example.expensetracker.ui.settings.SettingsViewModel
 import com.example.expensetracker.ui.utils.AppViewModelFactory
 
 enum class AppRoute(val titleResId: Int, val icon: ImageVector, val navKey: NavKey) {
@@ -35,7 +39,7 @@ enum class AppRoute(val titleResId: Int, val icon: ImageVector, val navKey: NavK
     STATISTICS(R.string.nav_statistics, Icons.Filled.BarChart, StatisticsNav),
     HISTORY(R.string.nav_history, Icons.Filled.List, HistoryNav),
     BUDGETS(R.string.nav_budgets, Icons.Filled.AccountBalanceWallet, BudgetsNav),
-    CHAT(R.string.nav_budgets, Icons.Filled.Chat, ChatNav), // Reusing nav_budgets temporarily for title
+    CHAT(R.string.ai_chat, Icons.Filled.Chat, ChatNav),
     SETTINGS(R.string.nav_settings, Icons.Filled.Settings, SettingsNav)
 }
 
@@ -55,10 +59,7 @@ fun MainScreen(
                 AppRoute.entries.forEach { route ->
                     NavigationBarItem(
                         selected = selectedRoute == route,
-                        onClick = { 
-                            selectedRoute = route
-                            // Keep everything inside MainScreen except when navigating completely away (not used currently for bottom tabs)
-                        },
+                        onClick = { selectedRoute = route },
                         icon = { Icon(route.icon, contentDescription = stringResource(route.titleResId)) },
                         label = { Text(stringResource(route.titleResId)) }
                     )
@@ -72,8 +73,16 @@ fun MainScreen(
                     val viewModel: DashboardViewModel = viewModel(factory = factory)
                     DashboardScreen(viewModel = viewModel, onAddExpenseClick = onAddExpenseClick)
                 }
+                AppRoute.CHAT -> {
+                    val viewModel: ChatViewModel = viewModel(factory = factory)
+                    ChatScreen(viewModel = viewModel)
+                }
+                AppRoute.SETTINGS -> {
+                    val viewModel: SettingsViewModel = viewModel(factory = factory)
+                    SettingsScreen(viewModel = viewModel)
+                }
                 else -> {
-                    Text("Content for ${selectedRoute.name} (WIP)")
+                    Text("Content for ${selectedRoute.name} (WIP)", modifier = Modifier.padding(16.dp))
                 }
             }
         }

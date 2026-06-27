@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.expensetracker.ExpenseTrackerApp
 import com.example.expensetracker.ui.addexpense.AddExpenseViewModel
+import com.example.expensetracker.ui.chat.ChatViewModel
 import com.example.expensetracker.ui.dashboard.DashboardViewModel
 import com.example.expensetracker.ui.settings.SettingsViewModel
 import com.example.expensetracker.data.ai.GeminiService
@@ -16,7 +17,6 @@ class AppViewModelFactory : ViewModelProvider.Factory {
         
         // Lazy initialize GeminiService with current API key
         val getGeminiService = {
-            // In a real app we might want to observe this, but for simplicity here we read once
             val apiKey = runBlocking { app.settingsManager.apiKeyFlow.first() } ?: ""
             val modelName = runBlocking { app.settingsManager.modelFlow.first() }
             GeminiService(apiKey = apiKey, modelName = modelName)
@@ -31,6 +31,9 @@ class AppViewModelFactory : ViewModelProvider.Factory {
             }
             modelClass.isAssignableFrom(AddExpenseViewModel::class.java) -> {
                 AddExpenseViewModel(app.expenseRepository, getGeminiService()) as T
+            }
+            modelClass.isAssignableFrom(ChatViewModel::class.java) -> {
+                ChatViewModel(getGeminiService()) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
