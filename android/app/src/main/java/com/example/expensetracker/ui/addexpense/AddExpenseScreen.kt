@@ -1,6 +1,9 @@
 package com.example.expensetracker.ui.addexpense
 
 import android.graphics.ImageDecoder
+import android.graphics.Rect
+import android.view.ViewTreeObserver
+import androidx.compose.ui.platform.LocalView
 import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -24,6 +27,26 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.expensetracker.R
 
+@Composable
+fun rememberIsKeyboardVisible(): Boolean {
+    val view = LocalView.current
+    var isImeVisible by remember { mutableStateOf(false) }
+    DisposableEffect(view) {
+        val listener = ViewTreeObserver.OnGlobalLayoutListener {
+            val rect = Rect()
+            view.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = view.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+            isImeVisible = keypadHeight > screenHeight * 0.15
+        }
+        view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        onDispose {
+            view.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+        }
+    }
+    return isImeVisible
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseScreen(
@@ -33,6 +56,7 @@ fun AddExpenseScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var inputText by remember { mutableStateOf("") }
+    val isKeyboardVisible = rememberIsKeyboardVisible()
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
@@ -95,10 +119,12 @@ fun AddExpenseScreen(
         contentWindowInsets = WindowInsets.statusBars,
         modifier = modifier
     ) { paddingValues ->
+        val topPadding = paddingValues.calculateTopPadding()
+        val bottomPadding = if (isKeyboardVisible) 0.dp else paddingValues.calculateBottomPadding()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = topPadding, bottom = bottomPadding)
                 .imePadding()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
