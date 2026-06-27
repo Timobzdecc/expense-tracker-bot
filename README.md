@@ -36,10 +36,68 @@ ALLOWED_USERS=123456789,987654321
 ```
 *(ID пользователей можно узнать у бота @userinfobot)*
 
-### 4. Запуск
+### 4. Запуск (Локально)
 ```bash
 python bot.py
 ```
+
+## 🌍 Развертывание на сервере (Ubuntu / Linux)
+
+Есть два удобных способа запустить бота на сервере так, чтобы он работал фоном 24/7.
+
+### Способ 1: С помощью Docker (Рекомендуемый)
+Это самый простой и надёжный способ. БД сохраняется благодаря volumes.
+
+1. Клонируйте репозиторий на сервер:
+   ```bash
+   git clone https://github.com/Timobzdecc/expense-tracker-bot.git
+   cd expense-tracker-bot
+   ```
+2. Создайте и заполните `.env` файл.
+3. Запустите контейнер в фоне:
+   ```bash
+   docker-compose up -d --build
+   ```
+*Для просмотра логов:* `docker-compose logs -f`
+*Для остановки:* `docker-compose down`
+
+### Способ 2: В виде службы Systemd (Без Docker)
+Если вы не используете Docker, настройте бота как системный сервис.
+
+1. Клонируйте репо, установите `python3-venv` и зависимости:
+   ```bash
+   git clone https://github.com/Timobzdecc/expense-tracker-bot.git /opt/expense-tracker-bot
+   cd /opt/expense-tracker-bot
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+2. Создайте файл конфигурации сервиса:
+   ```bash
+   sudo nano /etc/systemd/system/expensebot.service
+   ```
+   Вставьте туда:
+   ```ini
+   [Unit]
+   Description=Expense Tracker Telegram Bot
+   After=network.target
+
+   [Service]
+   User=root
+   WorkingDirectory=/opt/expense-tracker-bot
+   ExecStart=/opt/expense-tracker-bot/venv/bin/python bot.py
+   Restart=always
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+3. Запустите сервис:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable expensebot
+   sudo systemctl start expensebot
+   ```
+*Для просмотра логов:* `sudo journalctl -u expensebot -f`
 
 ## 📖 Как пользоваться (Мануал)
 
