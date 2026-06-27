@@ -108,8 +108,8 @@ def _capitalize(s: str) -> str:
 async def _get_category_from_ai(description: str) -> str:
     """Спросить AI только категорию. Возвращает slug или 'other'."""
     try:
-        response = await asyncio.wait_for(
-            model.generate_content_async(
+        def call_gemini():
+            return model.generate_content(
                 description,
                 safety_settings={
                     "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
@@ -117,7 +117,10 @@ async def _get_category_from_ai(description: str) -> str:
                     "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
                     "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
                 },
-            ),
+            )
+
+        response = await asyncio.wait_for(
+            asyncio.to_thread(call_gemini),
             timeout=API_TIMEOUT,
         )
 
@@ -262,8 +265,8 @@ async def parse_expense_from_image(image_bytes: bytes) -> Optional[list[dict]]:
             "data": image_bytes,
         }
 
-        response = await asyncio.wait_for(
-            vision_model.generate_content_async(
+        def call_gemini():
+            return vision_model.generate_content(
                 [_VISION_PROMPT, image_part],
                 safety_settings={
                     "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
@@ -271,7 +274,10 @@ async def parse_expense_from_image(image_bytes: bytes) -> Optional[list[dict]]:
                     "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
                     "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
                 },
-            ),
+            )
+
+        response = await asyncio.wait_for(
+            asyncio.to_thread(call_gemini),
             timeout=20,
         )
 
@@ -368,8 +374,8 @@ async def chat_reply(user_id: int, text: str) -> str:
         history[:] = history[-MAX_HISTORY:]
 
     try:
-        response = await asyncio.wait_for(
-            chat_model.generate_content_async(
+        def call_gemini():
+            return chat_model.generate_content(
                 contents=history,
                 safety_settings={
                     "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
@@ -377,7 +383,10 @@ async def chat_reply(user_id: int, text: str) -> str:
                     "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
                     "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
                 },
-            ),
+            )
+
+        response = await asyncio.wait_for(
+            asyncio.to_thread(call_gemini),
             timeout=45,
         )
 
