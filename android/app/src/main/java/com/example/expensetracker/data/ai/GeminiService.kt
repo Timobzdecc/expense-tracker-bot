@@ -45,13 +45,31 @@ class GeminiService(private val settingsManager: SettingsManager) {
             )
 
             val response = model.generateContent(description)
-            val result = response.text?.trim()?.trimEnd('.', ',', '!')?.lowercase() ?: "other"
+            val result = cleanAiResponse(response.text ?: "other").lowercase()
             
             // Validate that the returned slug actually exists
             if (Category.entries.any { it.slug == result }) result else "other"
         } catch (e: Exception) {
             "other"
         }
+    }
+
+    private fun cleanAiResponse(text: String): String {
+        var cleaned = text.trim()
+        if (cleaned.contains("</think>")) {
+            cleaned = cleaned.substringAfter("</think>").trim()
+        }
+        
+        // Split into lines and drop any leading bullet points/thoughts (even indented ones)
+        val lines = cleaned.split("\n")
+        val cleanLines = lines.dropWhile { 
+            val trimmedLine = it.trim()
+            trimmedLine.startsWith("*") || trimmedLine.startsWith("-") || trimmedLine.isBlank() 
+        }
+        if (cleanLines.isNotEmpty()) {
+            cleaned = cleanLines.joinToString("\n").trim()
+        }
+        return cleaned
     }
 
     suspend fun analyzeReceipt(bitmap: Bitmap): List<ParsedExpense> = withContext(Dispatchers.IO) {
@@ -131,7 +149,7 @@ class GeminiService(private val settingsManager: SettingsManager) {
             
             val chat = model.startChat(chatHistory)
             val response = chat.sendMessage(message)
-            response.text ?: "Не удалось получить ответ"
+            cleanAiResponse(response.text ?: "Не удалось получить ответ")
         } catch (e: Exception) {
             e.printStackTrace()
             "Ошибка связи с сервером AI. Проверьте интернет или API ключ."

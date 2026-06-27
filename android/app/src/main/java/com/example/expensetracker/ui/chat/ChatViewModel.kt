@@ -31,7 +31,26 @@ class ChatViewModel(
                     val greeting = ChatMessage("Привет! Я твой финансовый AI-ассистент. Чем могу помочь?", isUser = false)
                     chatRepository.saveMessage(greeting)
                 } else {
-                    _uiState.value = _uiState.value.copy(messages = history)
+                    // Clean up history dynamically so bad formatting is stripped out retroactively!
+                    val cleanedHistory = history.map { msg ->
+                        if (msg.isUser) {
+                            msg
+                        } else {
+                            var clean = msg.content.trim()
+                            if (clean.contains("</think>")) {
+                                clean = clean.substringAfter("</think>").trim()
+                            }
+                            if (clean.startsWith("*") || clean.contains("\n* ")) {
+                                val lines = clean.split("\n")
+                                val cleanLines = lines.dropWhile { it.trim().startsWith("*") || it.trim().startsWith("-") || it.isBlank() }
+                                if (cleanLines.isNotEmpty()) {
+                                    clean = cleanLines.joinToString("\n").trim()
+                                }
+                            }
+                            msg.copy(content = clean)
+                        }
+                    }
+                    _uiState.value = _uiState.value.copy(messages = cleanedHistory)
                 }
             }
         }
@@ -50,20 +69,7 @@ class ChatViewModel(
                 val currentHistory = _uiState.value.messages
                 val responseText = geminiService.chat(text, currentHistory)
                 
-                var cleanResponse = responseText.trim()
-                if (cleanResponse.contains("</think>")) {
-                    cleanResponse = cleanResponse.substringAfter("</think>").trim()
-                }
-                
-                if (cleanResponse.startsWith("* User said:") || cleanResponse.startsWith("* Role:") || cleanResponse.startsWith("* ")) {
-                    val lines = cleanResponse.split("\n")
-                    val cleanLines = lines.dropWhile { it.trim().startsWith("*") || it.isBlank() }
-                    if (cleanLines.isNotEmpty()) {
-                        cleanResponse = cleanLines.joinToString("\n").trim()
-                    }
-                }
-                
-                val aiMessage = ChatMessage(cleanResponse, isUser = false)
+                val aiMessage = ChatMessage(responseText, isUser = false)
                 chatRepository.saveMessage(aiMessage)
                 _uiState.value = _uiState.value.copy(isTyping = false)
             } catch (e: Exception) {
