@@ -15,7 +15,10 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONException
 
-class GeminiService(private val apiKey: String, private val modelName: String = "gemini-1.5-flash") {
+import com.example.expensetracker.data.preferences.SettingsManager
+import kotlinx.coroutines.flow.first
+
+class GeminiService(private val settingsManager: SettingsManager) {
 
     private val noHarmSettings = listOf(
         SafetySetting(HarmCategory.HARASSMENT, BlockThreshold.NONE),
@@ -25,6 +28,8 @@ class GeminiService(private val apiKey: String, private val modelName: String = 
     )
 
     suspend fun categorizeExpense(description: String): String = withContext(Dispatchers.IO) {
+        val apiKey = settingsManager.apiKeyFlow.first() ?: ""
+        val modelName = settingsManager.modelFlow.first() ?: "gemini-1.5-flash"
         if (apiKey.isBlank()) return@withContext "other"
 
         try {
@@ -50,6 +55,8 @@ class GeminiService(private val apiKey: String, private val modelName: String = 
     }
 
     suspend fun analyzeReceipt(bitmap: Bitmap): List<ParsedExpense> = withContext(Dispatchers.IO) {
+        val apiKey = settingsManager.apiKeyFlow.first() ?: ""
+        val modelName = settingsManager.modelFlow.first() ?: "gemini-1.5-flash"
         if (apiKey.isBlank()) return@withContext emptyList()
 
         try {
@@ -102,6 +109,8 @@ class GeminiService(private val apiKey: String, private val modelName: String = 
     }
 
     suspend fun chat(message: String, history: List<ChatMessage>): String = withContext(Dispatchers.IO) {
+        val apiKey = settingsManager.apiKeyFlow.first() ?: ""
+        val modelName = settingsManager.modelFlow.first() ?: "gemini-1.5-flash"
         if (apiKey.isBlank()) return@withContext "API ключ не настроен. Пожалуйста, добавьте его в настройках."
 
         try {

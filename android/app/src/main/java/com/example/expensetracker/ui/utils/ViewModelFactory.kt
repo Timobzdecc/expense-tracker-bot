@@ -17,13 +17,7 @@ import kotlinx.coroutines.runBlocking
 class AppViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val app = ExpenseTrackerApp.instance
-        
-        // Lazy initialize GeminiService with current API key
-        val getGeminiService = {
-            val apiKey = runBlocking { app.settingsManager.apiKeyFlow.first() } ?: ""
-            val modelName = runBlocking { app.settingsManager.modelFlow.first() }
-            GeminiService(apiKey = apiKey, modelName = modelName)
-        }
+        val geminiService = GeminiService(app.settingsManager)
         
         return when {
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
@@ -33,10 +27,10 @@ class AppViewModelFactory : ViewModelProvider.Factory {
                 DashboardViewModel(app.expenseRepository) as T
             }
             modelClass.isAssignableFrom(AddExpenseViewModel::class.java) -> {
-                AddExpenseViewModel(app.expenseRepository, getGeminiService()) as T
+                AddExpenseViewModel(app.expenseRepository, geminiService) as T
             }
             modelClass.isAssignableFrom(ChatViewModel::class.java) -> {
-                ChatViewModel(getGeminiService()) as T
+                ChatViewModel(geminiService) as T
             }
             modelClass.isAssignableFrom(BudgetsViewModel::class.java) -> {
                 BudgetsViewModel(app.budgetRepository, app.expenseRepository) as T
