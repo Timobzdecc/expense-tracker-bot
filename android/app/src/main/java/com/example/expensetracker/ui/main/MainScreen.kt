@@ -1,9 +1,8 @@
 package com.example.expensetracker.ui.main
 
+import android.graphics.Rect
+import android.view.ViewTreeObserver
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -18,11 +17,14 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -52,7 +54,26 @@ enum class AppRoute(val titleResId: Int, val icon: ImageVector, val navKey: NavK
     SETTINGS(R.string.nav_settings, Icons.Filled.Settings, SettingsNav)
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun rememberIsKeyboardVisible(): Boolean {
+    val view = LocalView.current
+    var isImeVisible by remember { mutableStateOf(false) }
+    DisposableEffect(view) {
+        val listener = ViewTreeObserver.OnGlobalLayoutListener {
+            val rect = Rect()
+            view.getWindowVisibleDisplayFrame(rect)
+            val screenHeight = view.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+            isImeVisible = keypadHeight > screenHeight * 0.15
+        }
+        view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        onDispose {
+            view.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+        }
+    }
+    return isImeVisible
+}
+
 @Composable
 fun MainScreen(
     onItemClick: (NavKey) -> Unit,
@@ -61,11 +82,12 @@ fun MainScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedRoute by rememberSaveable { mutableStateOf(AppRoute.DASHBOARD) }
+    val isKeyboardVisible = rememberIsKeyboardVisible()
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            if (!WindowInsets.isImeVisible) {
+            if (!isKeyboardVisible) {
                 NavigationBar {
                     AppRoute.entries.forEach { route ->
                         NavigationBarItem(
