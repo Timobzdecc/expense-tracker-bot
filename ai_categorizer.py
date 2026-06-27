@@ -21,7 +21,7 @@ from config import GEMINI_API_KEY, GEMINI_MODEL, CATEGORIES
 logger = logging.getLogger(__name__)
 
 # Настройка Gemini
-genai.configure(api_key=GEMINI_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY, transport="rest")
 
 # Список категорий для промпта
 _CATEGORY_LIST = "\n".join(

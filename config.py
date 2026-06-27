@@ -65,6 +65,8 @@ PROXY_URL = os.getenv("PROXY_URL", "").strip()
 if PROXY_URL:
     os.environ["HTTP_PROXY"] = PROXY_URL
     os.environ["HTTPS_PROXY"] = PROXY_URL
+    os.environ["http_proxy"] = PROXY_URL
+    os.environ["https_proxy"] = PROXY_URL
 else:
     PROXY_URL = None
 
