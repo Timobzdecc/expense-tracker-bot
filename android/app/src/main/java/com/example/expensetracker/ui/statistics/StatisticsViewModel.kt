@@ -49,8 +49,8 @@ class StatisticsViewModel(
                 val category = Category.entries.find { it.slug == stat.categorySlug } ?: Category.OTHER
                 CategoryStatItem(
                     category = category,
-                    amount = stat.totalAmount,
-                    percentage = if (total > 0) (stat.totalAmount / total).toFloat() else 0f
+                    amount = stat.amount,
+                    percentage = if (total > 0) (stat.amount / total).toFloat() else 0f
                 )
             }.sortedByDescending { it.amount }
 
