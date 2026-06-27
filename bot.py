@@ -10,7 +10,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import TelegramObject, Update
 
-from config import BOT_TOKEN, ALLOWED_USERS
+from config import BOT_TOKEN, ALLOWED_USERS, PROXY_URL
 from database import init_db
 from handlers import router
 
@@ -75,8 +75,12 @@ async def main():
         logger.error("❌ BOT_TOKEN не задан! Создай файл .env с токеном.")
         return
 
+    from aiogram.client.session.aiohttp import AiohttpSession
+    session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
+
     bot = Bot(
         token=BOT_TOKEN,
+        session=session,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = Dispatcher(storage=MemoryStorage())

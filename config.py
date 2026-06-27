@@ -60,6 +60,14 @@ ALLOWED_USERS: set[int] = (
 GEMINI_API_KEY = get_or_prompt("GEMINI_API_KEY", "🔑 Введите API-ключ Google Gemini (получить на aistudio.google.com)")
 GEMINI_MODEL = get_or_prompt("GEMINI_MODEL", "🧠 Введите название модели Gemini (или впишите свою кастомную)", "gemini-1.5-flash")
 
+# Proxy support
+PROXY_URL = os.getenv("PROXY_URL", "").strip()
+if PROXY_URL:
+    os.environ["HTTP_PROXY"] = PROXY_URL
+    os.environ["HTTPS_PROXY"] = PROXY_URL
+else:
+    PROXY_URL = None
+
 # Database (сохраняем рядом с exe/py, а не во временной папке PyInstaller)
 DB_PATH = os.path.join(base_dir, "expenses.db")
 

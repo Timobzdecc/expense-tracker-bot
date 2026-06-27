@@ -80,23 +80,32 @@ def generate_pie_chart(user_id: int, days: Optional[int] = None) -> Optional[byt
         sizes.append(cat["total"])
         colors.append(ACCENT_COLORS[i % len(ACCENT_COLORS)])
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(9, 6))
 
     wedges, texts, autotexts = ax.pie(
         sizes,
-        labels=labels,
+        labels=None, # Убираем подписи с самих долек, чтобы они не слипались
         colors=colors,
-        autopct="%1.0f%%",
+        autopct=lambda pct: f"{pct:.0f}%" if pct > 3 else "", # Показываем проценты только для долей > 3%
         startangle=90,
-        pctdistance=0.75,
+        pctdistance=0.7,
         wedgeprops={"linewidth": 2, "edgecolor": BG_COLOR},
     )
 
-    for text in texts:
-        text.set_fontsize(10)
-        text.set_color(TEXT_COLOR)
+    # Добавляем красивую легенду справа от диаграммы
+    ax.legend(
+        wedges,
+        labels,
+        title="Категории",
+        loc="center left",
+        bbox_to_anchor=(1, 0.5),
+        frameon=True,
+        facecolor=CARD_COLOR,
+        edgecolor=GRID_COLOR,
+    )
+
     for autotext in autotexts:
-        autotext.set_fontsize(9)
+        autotext.set_fontsize(10)
         autotext.set_fontweight("bold")
         autotext.set_color("white")
 
