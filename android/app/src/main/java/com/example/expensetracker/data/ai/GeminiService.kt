@@ -41,11 +41,11 @@ class GeminiService(private val settingsManager: SettingsManager) {
                     maxOutputTokens = 20
                 },
                 safetySettings = noHarmSettings,
-                systemInstruction = content { text("Определи категорию расхода. Возможные категории: ${Category.entries.joinToString(", ") { it.slug }}. Ответь ОДНИМ СЛОВОМ — slug категории. Если не можешь определить, ответь other.") }
+                systemInstruction = content { text("Определи категорию расхода. Возможные категории (Название -> slug): ${Category.entries.joinToString(", ") { "${it.label} -> ${it.slug}" }}. Ответь СТРОГО ОДНИМ СЛОВОМ — slug категории на английском языке (например: food, entertainment). Никаких знаков препинания, переводов или объяснений. Если не можешь определить, ответь other.") }
             )
 
             val response = model.generateContent(description)
-            val result = response.text?.trim()?.lowercase() ?: "other"
+            val result = response.text?.trim()?.trimEnd('.', ',', '!')?.lowercase() ?: "other"
             
             // Validate that the returned slug actually exists
             if (Category.entries.any { it.slug == result }) result else "other"
@@ -118,11 +118,11 @@ class GeminiService(private val settingsManager: SettingsManager) {
                 modelName = modelName,
                 apiKey = apiKey,
                 generationConfig = generationConfig {
-                    temperature = 0.8f
+                    temperature = 0.7f
                     maxOutputTokens = 2048
                 },
                 safetySettings = noHarmSettings,
-                systemInstruction = content { text("Ты дружелюбный финансовый AI-ассистент в приложении для учёта расходов. Отвечай на русском языке кратко и по делу.") }
+                systemInstruction = content { text("Ты дружелюбный финансовый AI-ассистент в приложении для учёта расходов. Отвечай на русском языке кратко и по делу. КАТЕГОРИЧЕСКИ ЗАПРЕЩАЕТСЯ писать свои внутренние рассуждения, логику, мета-промпты или мысли (например, не пиши 'User said...' или 'Constraint: ...'). Выдавай ТОЛЬКО финальный человечный ответ пользователю.") }
             )
 
             val chatHistory = history.map {

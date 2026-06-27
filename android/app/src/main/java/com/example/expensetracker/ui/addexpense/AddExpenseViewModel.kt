@@ -67,6 +67,43 @@ class AddExpenseViewModel(
         }
     }
 
+    fun processReceiptImage(bitmap: android.graphics.Bitmap) {
+        viewModelScope.launch {
+            _uiState.value = AddExpenseUiState(isProcessing = true)
+
+            try {
+                // Parse image with Gemini
+                val expenses = geminiService.analyzeReceipt(bitmap)
+                
+                if (expenses.isEmpty()) {
+                    _uiState.value = AddExpenseUiState(
+                        isProcessing = false, 
+                        error = "Не удалось распознать траты на чеке."
+                    )
+                    return@launch
+                }
+
+                // Save all parsed expenses
+                expenses.forEach { parsed ->
+                    val expense = Expense(
+                        amount = parsed.amount,
+                        description = parsed.description,
+                        categorySlug = parsed.categorySlug
+                    )
+                    expenseRepository.addExpense(expense)
+                }
+                
+                _uiState.value = AddExpenseUiState(isProcessing = false, success = true)
+
+            } catch (e: Exception) {
+                _uiState.value = AddExpenseUiState(
+                    isProcessing = false, 
+                    error = e.message ?: "Произошла ошибка при анализе чека"
+                )
+            }
+        }
+    }
+
     fun resetState() {
         _uiState.value = AddExpenseUiState()
     }

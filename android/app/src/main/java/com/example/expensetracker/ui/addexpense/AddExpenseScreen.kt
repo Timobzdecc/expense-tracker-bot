@@ -1,5 +1,7 @@
 package com.example.expensetracker.ui.addexpense
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,6 +27,14 @@ fun AddExpenseScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var inputText by remember { mutableStateOf("") }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            viewModel.processReceiptImage(bitmap)
+        }
+    }
 
     // Navigate back automatically on success
     LaunchedEffect(uiState.success) {
@@ -101,7 +111,7 @@ fun AddExpenseScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { /* TODO: Implement Gallery Picker or CameraX for Receipt Scanning */ },
+                onClick = { cameraLauncher.launch(null) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
