@@ -12,8 +12,9 @@ android {
         applicationId = "com.example.expensetracker"
         minSdk = 26
         targetSdk = 36
-        versionCode = (project.findProperty("versionCode") as? String)?.toInt() ?: 1
-        versionName = (project.findProperty("versionName") as? String) ?: "1.0.0"
+        val ciVersionCode = (project.findProperty("versionCode") as? String)?.toInt()
+        versionCode = ciVersionCode ?: 999999
+        versionName = (project.findProperty("versionName") as? String) ?: "1.0.0-local"
     }
 
     signingConfigs {
