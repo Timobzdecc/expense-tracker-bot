@@ -3,6 +3,8 @@ package com.example.expensetracker.ui.main
 import android.graphics.Rect
 import android.view.ViewTreeObserver
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -86,6 +88,7 @@ fun MainScreen(
 
     Scaffold(
         modifier = modifier,
+        contentWindowInsets = WindowInsets.statusBars,
         bottomBar = {
             if (!isKeyboardVisible) {
                 NavigationBar {
