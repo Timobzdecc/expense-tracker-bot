@@ -1,6 +1,8 @@
 package com.example.expensetracker.ui.main
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -61,14 +63,16 @@ fun MainScreen(
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            NavigationBar {
-                AppRoute.entries.forEach { route ->
-                    NavigationBarItem(
-                        selected = selectedRoute == route,
-                        onClick = { selectedRoute = route },
-                        icon = { Icon(route.icon, contentDescription = stringResource(route.titleResId)) },
-                        label = { Text(stringResource(route.titleResId)) }
-                    )
+            if (!WindowInsets.isImeVisible) {
+                NavigationBar {
+                    AppRoute.entries.forEach { route ->
+                        NavigationBarItem(
+                            selected = selectedRoute == route,
+                            onClick = { selectedRoute = route },
+                            icon = { Icon(route.icon, contentDescription = stringResource(route.titleResId)) },
+                            label = { Text(stringResource(route.titleResId)) }
+                        )
+                    }
                 }
             }
         }
