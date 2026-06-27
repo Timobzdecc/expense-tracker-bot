@@ -1,7 +1,6 @@
 package com.example.expensetracker
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,7 +27,7 @@ fun MainNavigation() {
                     onItemClick = { navKey -> backStack.add(navKey) },
                     onAddExpenseClick = { backStack.add(AddExpenseNav) },
                     factory = factory,
-                    modifier = Modifier.safeDrawingPadding()
+                    modifier = Modifier
                 )
             }
             
@@ -37,7 +36,7 @@ fun MainNavigation() {
                 AddExpenseScreen(
                     viewModel = viewModel,
                     onBack = { backStack.removeLastOrNull() },
-                    modifier = Modifier.safeDrawingPadding()
+                    modifier = Modifier
                 )
             }
         },
