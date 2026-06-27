@@ -1,6 +1,9 @@
 name: Build and Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -65,10 +68,12 @@ jobs:
           dpkg-deb --build package expensebot_1.0.0_amd64.deb
 
       - name: Upload DEB to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.0
+          files: expensebot_1.0.0_amd64.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload v1.0.0 expensebot_1.0.0_amd64.deb --clobber
 
   build-windows-exe:
     runs-on: windows-latest
@@ -89,7 +94,9 @@ jobs:
         run: pyinstaller --onefile --name ExpenseBot bot.py
 
       - name: Upload EXE to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.0
+          files: dist/ExpenseBot.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload v1.0.0 dist/ExpenseBot.exe --clobber
