@@ -54,7 +54,15 @@ class AddExpenseViewModel(
                     categorySlug = categorySlug
                 )
                 
-                expenseRepository.addExpense(expense)
+                val id = expenseRepository.addExpense(expense)
+                
+                // Fetch image in background
+                viewModelScope.launch {
+                    val photoUrl = com.example.expensetracker.data.remote.ImageFetcher.fetchImageFor(description)
+                    if (photoUrl != null) {
+                        expenseRepository.updateExpensePhoto(id, photoUrl)
+                    }
+                }
                 
                 _uiState.value = AddExpenseUiState(isProcessing = false, success = true)
 
@@ -90,7 +98,14 @@ class AddExpenseViewModel(
                         description = parsed.description,
                         categorySlug = parsed.categorySlug
                     )
-                    expenseRepository.addExpense(expense)
+                    val id = expenseRepository.addExpense(expense)
+                    // Fetch image in background
+                    viewModelScope.launch {
+                        val photoUrl = com.example.expensetracker.data.remote.ImageFetcher.fetchImageFor(parsed.description)
+                        if (photoUrl != null) {
+                            expenseRepository.updateExpensePhoto(id, photoUrl)
+                        }
+                    }
                 }
                 
                 _uiState.value = AddExpenseUiState(isProcessing = false, success = true)

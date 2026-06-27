@@ -22,6 +22,10 @@ import com.example.expensetracker.domain.model.Expense
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+import coil.compose.AsyncImage
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.layout.ContentScale
+
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
@@ -78,7 +82,9 @@ fun DashboardScreen(
             } else {
                 LazyColumn {
                     items(uiState.recentExpenses) { expense ->
-                        ExpenseItem(expense)
+                        ExpenseItem(expense) { url ->
+                            // Full screen handled in Dashboard or History (we'll implement it in History primarily, but let's add it here too)
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
@@ -88,7 +94,37 @@ fun DashboardScreen(
 }
 
 @Composable
-fun ExpenseItem(expense: Expense) {
+fun FullScreenImageDialog(imageUrl: String, onDismiss: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(androidx.compose.ui.graphics.Color.Black)
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "Full screen image",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Fit
+            )
+        }
+    }
+}
+
+@Composable
+fun ExpenseItem(
+    expense: Expense,
+    onImageClick: ((String) -> Unit)? = null
+) {
     val dateFormat = SimpleDateFormat("dd MMM", Locale("ru"))
     
     Card(
@@ -102,14 +138,26 @@ fun ExpenseItem(expense: Expense) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(expense.category.color.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = expense.category.emoji, fontSize = 24.sp)
+            if (expense.photoUrl != null) {
+                AsyncImage(
+                    model = expense.photoUrl,
+                    contentDescription = expense.description,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onImageClick?.invoke(expense.photoUrl) }
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(expense.category.color.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = expense.category.emoji, fontSize = 24.sp)
+                }
             }
             
             Column(

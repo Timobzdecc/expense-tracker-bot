@@ -108,4 +108,10 @@ dependencies {
 
   // Serialization
   implementation(libs.kotlinx.serialization.json)
+  
+  // Image Loading
+  implementation(libs.coil.compose)
+  
+  // HTML Parser
+  implementation(libs.jsoup)
 }

@@ -21,6 +21,10 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         expenseDao.updateExpenseCategory(id, newCategorySlug)
     }
 
+    suspend fun updateExpensePhoto(id: Long, photoUrl: String) {
+        expenseDao.updateExpensePhoto(id, photoUrl)
+    }
+
     fun getLastExpenses(limit: Int = 5): Flow<List<Expense>> {
         return expenseDao.getLastExpenses(limit).map { entities ->
             entities.map { it.toDomainModel() }

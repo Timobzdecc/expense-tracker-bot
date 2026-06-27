@@ -7,7 +7,8 @@ data class Expense(
     val amount: Double,
     val description: String,
     val categorySlug: String,
-    val createdAt: Date = Date()
+    val createdAt: Date = Date(),
+    val photoUrl: String? = null
 ) {
     val category: Category
         get() = Category.fromSlug(categorySlug)

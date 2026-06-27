@@ -26,6 +26,7 @@ fun HistoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     var expenseToEdit by remember { mutableStateOf<Expense?>(null) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
+    var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -50,10 +51,17 @@ fun HistoryScreen(
                     SwipeableExpenseItem(
                         expense = expense,
                         onDeleteClick = { expenseToDelete = expense },
-                        onEditClick = { expenseToEdit = expense }
+                        onEditClick = { expenseToEdit = expense },
+                        onImageClick = { url -> fullScreenImageUrl = url }
                     )
                 }
             }
+        }
+    }
+
+    if (fullScreenImageUrl != null) {
+        com.example.expensetracker.ui.dashboard.FullScreenImageDialog(imageUrl = fullScreenImageUrl!!) {
+            fullScreenImageUrl = null
         }
     }
 
@@ -94,11 +102,12 @@ fun HistoryScreen(
 fun SwipeableExpenseItem(
     expense: Expense,
     onDeleteClick: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onImageClick: ((String) -> Unit)? = null
 ) {
     // Keeping it simple without actual swipe gesture for now, using a row with action buttons
     Column {
-        ExpenseItem(expense)
+        ExpenseItem(expense, onImageClick)
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.End

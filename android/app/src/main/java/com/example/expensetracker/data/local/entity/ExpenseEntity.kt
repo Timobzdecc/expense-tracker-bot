@@ -12,7 +12,8 @@ data class ExpenseEntity(
     val amount: Double,
     val description: String,
     val categorySlug: String,
-    val createdAt: Date = Date()
+    val createdAt: Date = Date(),
+    val photoUrl: String? = null
 ) {
     fun toDomainModel(): Expense {
         return Expense(
@@ -20,7 +21,8 @@ data class ExpenseEntity(
             amount = amount,
             description = description,
             categorySlug = categorySlug,
-            createdAt = createdAt
+            createdAt = createdAt,
+            photoUrl = photoUrl
         )
     }
 
@@ -31,7 +33,8 @@ data class ExpenseEntity(
                 amount = expense.amount,
                 description = expense.description,
                 categorySlug = expense.categorySlug,
-                createdAt = expense.createdAt
+                createdAt = expense.createdAt,
+                photoUrl = expense.photoUrl
             )
         }
     }

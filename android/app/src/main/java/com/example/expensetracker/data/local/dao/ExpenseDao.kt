@@ -18,6 +18,9 @@ interface ExpenseDao {
     @Query("UPDATE expenses SET categorySlug = :newCategorySlug WHERE id = :id")
     suspend fun updateExpenseCategory(id: Long, newCategorySlug: String)
 
+    @Query("UPDATE expenses SET photoUrl = :photoUrl WHERE id = :id")
+    suspend fun updateExpensePhoto(id: Long, photoUrl: String)
+
     @Query("SELECT * FROM expenses ORDER BY createdAt DESC LIMIT :limit")
     fun getLastExpenses(limit: Int): Flow<List<ExpenseEntity>>
 
