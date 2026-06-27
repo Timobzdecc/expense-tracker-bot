@@ -1,0 +1,71 @@
+name: Build DEB and upload
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller --onefile --name expensebot bot.py
+
+      - name: Prepare DEB package
+        run: |
+          mkdir -p package/DEBIAN
+          mkdir -p package/usr/bin
+          mkdir -p package/lib/systemd/system
+          
+          # Копируем бинарник
+          cp dist/expensebot package/usr/bin/
+          chmod +x package/usr/bin/expensebot
+          
+          # Создаем control файл
+          cat <<EOF > package/DEBIAN/control
+          Package: expensebot
+          Version: 1.0.0
+          Section: base
+          Priority: optional
+          Architecture: amd64
+          Maintainer: GitHub Actions <noreply@github.com>
+          Description: AI-powered Telegram Expense Tracker Bot
+          EOF
+          
+          # Создаем systemd сервис
+          cat <<EOF > package/lib/systemd/system/expensebot.service
+          [Unit]
+          Description=Expense Tracker Telegram Bot
+          After=network.target
+
+          [Service]
+          User=root
+          WorkingDirectory=/usr/bin
+          ExecStart=/usr/bin/expensebot
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          
+          dpkg-deb --build package expensebot_1.0.0_amd64.deb
+
+      - name: Upload to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v1.0.0 expensebot_1.0.0_amd64.deb --clobber
