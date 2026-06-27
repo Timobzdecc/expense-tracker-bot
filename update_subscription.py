@@ -10,10 +10,7 @@ CONFIG_PATH = "/root/expense-tracker-bot/xray_config.json"
 
 def fetch_links():
     try:
-        req = urllib.request.Request(
-            SUB_URL, 
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        )
+        req = urllib.request.Request(SUB_URL)
         with urllib.request.urlopen(req, timeout=10) as response:
             content = response.read().decode('utf-8').strip()
         
