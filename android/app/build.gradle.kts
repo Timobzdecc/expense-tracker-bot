@@ -20,7 +20,7 @@ android {
             48
         }
         val ciVersionCode = (project.findProperty("versionCode") as? String)?.toInt()
-        versionCode = ciVersionCode ?: gitCommitCount
+        versionCode = ciVersionCode ?: 49
         versionName = (project.findProperty("versionName") as? String) ?: "1.0.3"
     }
 

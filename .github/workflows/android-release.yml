@@ -39,8 +39,18 @@ jobs:
         run: echo "commit_count=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
         working-directory: ${{ github.workspace }}
 
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.RELEASE_STORE_FILE_BASE64 }}" | base64 --decode > release.keystore
+        working-directory: ./android/app
+
       - name: Build Release APK
-        run: ./gradlew assembleRelease -PversionCode=${{ steps.vars.outputs.commit_count }} -PversionName="1.0.3"
+        run: ./gradlew assembleRelease -PversionCode=49 -PversionName="1.0.3"
+        env:
+          RELEASE_STORE_FILE: release.keystore
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -53,8 +63,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: android/app/build/outputs/apk/release/app-release.apk
-          tag_name: "android-v${{ steps.vars.outputs.commit_count }}"
-          name: "Android Release 1.0.3 (${{ steps.vars.outputs.commit_count }})"
-          generate_release_notes: true
+          tag_name: "android-v49"
+          name: "Android Release 1.0.3 (49)"
+          body: "Эта версия ставится на чистую, с удалением старой из-за смены подписи на релизную.\n\n[Все релизы на GitHub](https://github.com/Timobzdecc/expense-tracker-bot/releases)"
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
