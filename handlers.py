@@ -5,11 +5,11 @@ from datetime import datetime
 
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message, CallbackQuery, BufferedInputFile
+from aiogram.types import Message, CallbackQuery, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from config import CATEGORY_BY_SLUG, CURRENCY, CATEGORIES
+from config import CATEGORY_BY_SLUG, CURRENCY, CATEGORIES, ADMIN_USERS
 from database import (
     ensure_user,
     add_expense,
@@ -20,6 +20,9 @@ from database import (
     set_budget,
     get_budgets,
     get_monthly_spent,
+    get_all_users,
+    set_user_blacklist_status,
+    is_user_blacklisted,
 )
 from ai_categorizer import parse_expense, parse_expense_from_image, chat_reply, clear_chat_history
 from charts import generate_pie_chart, generate_bar_chart
@@ -33,6 +36,9 @@ from keyboards import (
     history_keyboard,
     budget_categories_keyboard,
     delete_confirm_keyboard,
+    admin_panel_keyboard,
+    admin_user_action_keyboard,
+    admin_users_list_keyboard,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,6 +55,10 @@ class BudgetStates(StatesGroup):
 
 class ChatStates(StatesGroup):
     chatting = State()
+
+class AdminStates(StatesGroup):
+    waiting_for_ban_id = State()
+    waiting_for_unban_id = State()
 
 
 # ── Утилиты форматирования ───────────────────────────────────────────────
@@ -104,7 +114,7 @@ async def cmd_start(message: Message):
         "🤖 Я автоматически определю категорию с помощью ИИ\n"
         "и запишу трату в базу.\n\n"
         "👇 Используй меню внизу для навигации:",
-        reply_markup=main_menu_keyboard(),
+        reply_markup=main_menu_keyboard(message.from_user.id),
         parse_mode="HTML",
     )
 
@@ -513,7 +523,7 @@ async def exit_chat_mode(message: Message, state: FSMContext):
     await message.answer(
         "✅ Вернулись в режим учёта трат.\n"
         "Пиши траты как обычно!",
-        reply_markup=main_menu_keyboard(),
+        reply_markup=main_menu_keyboard(message.from_user.id),
         parse_mode="HTML",
     )
 
@@ -536,80 +546,131 @@ async def handle_chat_message(message: Message):
         await typing.edit_text(reply, parse_mode=None)
 
 
-# ── Обработка трат (текст) ───────────────────────────────────────────────
+# ── Админка ──────────────────────────────────────────────────────────────
 
-@router.message(F.text)
-async def handle_expense(message: Message, state: FSMContext):
-    """Основной обработчик — парсинг траты через AI."""
-    # Пропускаем, если это состояние FSM
-    current_state = await state.get_state()
-    if current_state is not None:
+@router.message(Command("admin"))
+@router.message(F.text == "⚙️ Админка")
+async def cmd_admin(message: Message):
+    """Вход в админку."""
+    # Строгая проверка на один ID
+    if message.from_user.id != 1936852161:
         return
 
-    ensure_user(message.from_user.id, message.from_user.username,
-                message.from_user.first_name)
-
-    # Отправляем индикатор обработки
-    processing = await message.answer("🤖 <i>Анализирую...</i>", parse_mode="HTML")
-
-    try:
-        # Парсим через AI
-        result = await parse_expense(message.text)
-    except Exception as e:
-        logger.error(f"Необработанная ошибка в parse_expense: {e}")
-        result = None
-
-    if result is None:
-        await processing.edit_text(
-            "🤔 Не могу распознать трату.\n\n"
-            "💡 Попробуй написать в формате:\n"
-            "<code>описание сумма</code>\n\n"
-            "Например: <code>кофе старбакс 350</code>",
-            parse_mode="HTML",
-        )
-        return
-
-    # Записываем в БД
-    expense_id = add_expense(
-        user_id=message.from_user.id,
-        amount=result["amount"],
-        description=result["description"],
-        category_slug=result["category"],
-    )
-
-    cat_name = CATEGORY_BY_SLUG.get(result["category"], "❓ Прочее")
-
-    # Проверяем бюджет
-    budget_warning = ""
-    budgets = get_budgets(message.from_user.id)
-    for b in budgets:
-        if b["category_slug"] == result["category"]:
-            spent = get_monthly_spent(message.from_user.id, result["category"])
-            if spent > b["monthly_limit"]:
-                over = spent - b["monthly_limit"]
-                budget_warning = (
-                    f"\n\n⚠️ <b>Бюджет превышен!</b>\n"
-                    f"Лимит: {fmt_amount(b['monthly_limit'])}\n"
-                    f"Потрачено: {fmt_amount(spent)}\n"
-                    f"Перерасход: {fmt_amount(over)}"
-                )
-            elif spent > b["monthly_limit"] * 0.8:
-                remaining = b["monthly_limit"] - spent
-                budget_warning = (
-                    f"\n\n🟡 Осталось {fmt_amount(remaining)} "
-                    f"из {fmt_amount(b['monthly_limit'])} бюджета"
-                )
-            break
-
-    await processing.edit_text(
-        f"✅ <b>Трата записана!</b>\n\n"
-        f"📂 Категория: {cat_name}\n"
-        f"📝 Описание: {result['description']}\n"
-        f"💵 Сумма: <b>{fmt_amount(result['amount'])}</b>"
-        f"{budget_warning}",
-        reply_markup=confirm_expense_keyboard(expense_id),
+    await message.answer(
+        "⚙️ <b>Панель администратора</b>\n\n"
+        "Здесь вы можете управлять пользователями бота.",
+        reply_markup=admin_panel_keyboard(),
         parse_mode="HTML",
     )
+
+
+@router.callback_query(F.data == "admin:back")
+async def cb_admin_back(callback: CallbackQuery):
+    """Возврат в главное меню админки."""
+    if callback.from_user.id != 1936852161:
+        return
+
+    await callback.message.edit_text(
+        "⚙️ <b>Панель администратора</b>\n\n"
+        "Здесь вы можете управлять пользователями бота.",
+        reply_markup=admin_panel_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+@router.callback_query(F.data == "admin:users")
+async def cb_admin_users(callback: CallbackQuery):
+    """Список всех пользователей."""
+    if callback.from_user.id != 1936852161:
+        return
+
+    users = get_all_users()
+    if not users:
+        await callback.message.edit_text("🤷 Пользователей пока нет.")
+        return
+
+    lines = ["👥 <b>Список пользователей:</b>\n"]
+    for u in users:
+        status = "🚫 ЧС" if u["is_blacklisted"] else "✅ Активен"
+        username = f"@{u['username']}" if u['username'] else "нет username"
+        lines.append(
+            f"👤 {u['first_name']} ({username})\n"
+            f"🆔 <code>{u['telegram_id']}</code> | {status}\n"
+        )
+
+    await callback.message.edit_text(
+        "\n".join(lines),
+        reply_markup=admin_panel_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+@router.callback_query(F.data == "admin:list_to_ban")
+async def cb_admin_list_to_ban(callback: CallbackQuery):
+    """Список активных пользователей для бана."""
+    if callback.from_user.id != 1936852161:
+        return
+
+    users = [u for u in get_all_users() if not u["is_blacklisted"]]
+    # Исключаем самого админа из списка на бан
+    users = [u for u in users if u["telegram_id"] != 1936852161]
+
+    if not users:
+        await callback.answer("Нет активных пользователей для бана", show_alert=True)
+        return
+
+    await callback.message.edit_text(
+        "🚫 <b>Выберите пользователя для бана:</b>",
+        reply_markup=admin_users_list_keyboard(users, "ban"),
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data == "admin:list_to_unban")
+async def cb_admin_list_to_unban(callback: CallbackQuery):
+    """Список забаненных пользователей для разбана."""
+    if callback.from_user.id != 1936852161:
+        return
+
+    users = [u for u in get_all_users() if u["is_blacklisted"]]
+
+    if not users:
+        await callback.answer("Черный список пуст", show_alert=True)
+        return
+
+    await callback.message.edit_text(
+        "✅ <b>Выберите пользователя для разбана:</b>",
+        reply_markup=admin_users_list_keyboard(users, "unban"),
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data.startswith("admin_act:"))
+async def cb_admin_action(callback: CallbackQuery):
+    """Выполнение действия над пользователем из списка."""
+    if callback.from_user.id != 1936852161:
+        return
+
+    parts = callback.data.split(":")
+    action = parts[1]
+    target_id = int(parts[2])
+
+    status = True if action == "ban" else False
+    set_user_blacklist_status(target_id, status)
+
+    msg = "заблокирован 🚫" if status else "разблокирован ✅"
+    await callback.answer(f"Пользователь {msg}")
+
+    # После действия возвращаемся к соответствующему списку
+    if action == "ban":
+        await cb_admin_list_to_ban(callback)
+    else:
+        await cb_admin_list_to_unban(callback)
+
+
+# ── Обработка трат (текст) ───────────────────────────────────────────────
+
+# ПЕРЕНЕСЕНО В КОНЕЦ ФАЙЛА ДЛЯ ПРАВИЛЬНОГО ПРИОРИТЕТА ХЕНДЛЕРОВ
 
 
 # ── Callback: изменение категории ────────────────────────────────────────
@@ -688,7 +749,85 @@ async def cb_confirm_delete(callback: CallbackQuery):
 
 
 @router.callback_query(F.data == "cancel")
-async def cb_cancel(callback: CallbackQuery):
+async def cb_cancel(callback: CallbackQuery, state: FSMContext = None):
     """Отмена действия."""
-    await callback.message.delete_reply_markup()
+    if state:
+        await state.clear()
+    await callback.message.delete()
     await callback.answer("Отменено")
+
+
+# ── Обработка трат (текст) ───────────────────────────────────────────────
+
+@router.message(F.text)
+async def handle_expense(message: Message, state: FSMContext):
+    """Основной обработчик — парсинг траты через AI."""
+    # Пропускаем, если это состояние FSM
+    current_state = await state.get_state()
+    if current_state is not None:
+        return
+
+    ensure_user(message.from_user.id, message.from_user.username,
+                message.from_user.first_name)
+
+    # Отправляем индикатор обработки
+    processing = await message.answer("🤖 <i>Анализирую...</i>", parse_mode="HTML")
+
+    try:
+        # Парсим через AI
+        result = await parse_expense(message.text)
+    except Exception as e:
+        logger.error(f"Необработанная ошибка в parse_expense: {e}")
+        result = None
+
+    if result is None:
+        await processing.edit_text(
+            "🤔 Не могу распознать трату.\n\n"
+            "💡 Попробуй написать в формате:\n"
+            "<code>описание сумма</code>\n\n"
+            "Например: <code>кофе старбакс 350</code>",
+            parse_mode="HTML",
+        )
+        return
+
+    # Записываем в БД
+    expense_id = add_expense(
+        user_id=message.from_user.id,
+        amount=result["amount"],
+        description=result["description"],
+        category_slug=result["category"],
+    )
+
+    cat_name = CATEGORY_BY_SLUG.get(result["category"], "❓ Прочее")
+
+    # Проверяем бюджет
+    budget_warning = ""
+    budgets = get_budgets(message.from_user.id)
+    for b in budgets:
+        if b["category_slug"] == result["category"]:
+            spent = get_monthly_spent(message.from_user.id, result["category"])
+            if spent > b["monthly_limit"]:
+                over = spent - b["monthly_limit"]
+                budget_warning = (
+                    f"\n\n⚠️ <b>Бюджет превышен!</b>\n"
+                    f"Лимит: {fmt_amount(b['monthly_limit'])}\n"
+                    f"Потрачено: {fmt_amount(spent)}\n"
+                    f"Перерасход: {fmt_amount(over)}"
+                )
+            elif spent > b["monthly_limit"] * 0.8:
+                remaining = b["monthly_limit"] - spent
+                budget_warning = (
+                    f"\n\n🟡 Осталось {fmt_amount(remaining)} "
+                    f"из {fmt_amount(b['monthly_limit'])} бюджета"
+                )
+            break
+
+    await processing.edit_text(
+        f"✅ <b>Трата записана!</b>\n\n"
+        f"📂 Категория: {cat_name}\n"
+        f"📝 Описание: {result['description']}\n"
+        f"💵 Сумма: <b>{fmt_amount(result['amount'])}</b>"
+        f"{budget_warning}",
+        reply_markup=confirm_expense_keyboard(expense_id),
+        parse_mode="HTML",
+    )

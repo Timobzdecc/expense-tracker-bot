@@ -10,8 +10,8 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import TelegramObject, Update
 
-from config import BOT_TOKEN, ALLOWED_USERS, PROXY_URL
-from database import init_db
+from config import BOT_TOKEN, ALLOWED_USERS, ADMIN_USERS, PROXY_URL
+from database import init_db, is_user_blacklisted
 from handlers import router
 
 # Логирование
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class AccessMiddleware(BaseMiddleware):
-    """Middleware для ограничения доступа по белому списку."""
+    """Middleware для ограничения доступа по белому списку и проверки ЧС."""
 
     async def __call__(
         self,
@@ -32,10 +32,6 @@ class AccessMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        # Если белый список пуст — пускаем всех
-        if not ALLOWED_USERS:
-            return await handler(event, data)
-
         # Определяем user_id из любого типа события
         user_id = None
         if hasattr(event, "from_user") and event.from_user:
@@ -43,7 +39,20 @@ class AccessMiddleware(BaseMiddleware):
         elif hasattr(event, "message") and event.message and event.message.from_user:
             user_id = event.message.from_user.id
 
-        if user_id and user_id in ALLOWED_USERS:
+        if not user_id:
+            return await handler(event, data)
+
+        # 1. Проверка на черный список в БД
+        if is_user_blacklisted(user_id):
+            logger.warning(f"🚫 Пользователь {user_id} в черном списке. Игнорирую.")
+            return None
+
+        # 2. Если белый список пуст — пускаем всех (кроме ЧС)
+        if not ALLOWED_USERS:
+            return await handler(event, data)
+
+        # 3. Проверка на белый список
+        if user_id in ALLOWED_USERS or user_id in ADMIN_USERS:
             return await handler(event, data)
 
         # Чужой пользователь — молча игнорируем

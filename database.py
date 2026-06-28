@@ -25,6 +25,7 @@ def init_db() -> None:
             telegram_id INTEGER UNIQUE NOT NULL,
             username TEXT,
             first_name TEXT,
+            is_blacklisted INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -51,6 +52,12 @@ def init_db() -> None:
         CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(created_at);
         CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_slug);
     """)
+    # Миграция: добавляем колонку is_blacklisted, если её нет (для старых БД)
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN is_blacklisted INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # Колонка уже существует
+
     conn.commit()
     conn.close()
 
@@ -69,6 +76,36 @@ def ensure_user(telegram_id: int, username: Optional[str] = None,
     )
     conn.commit()
     conn.close()
+
+
+def is_user_blacklisted(telegram_id: int) -> bool:
+    """Проверить, находится ли пользователь в ЧС."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT is_blacklisted FROM users WHERE telegram_id = ?",
+        (telegram_id,)
+    ).fetchone()
+    conn.close()
+    return bool(row["is_blacklisted"]) if row else False
+
+
+def set_user_blacklist_status(telegram_id: int, status: bool) -> None:
+    """Добавить или удалить пользователя из ЧС."""
+    conn = get_connection()
+    conn.execute(
+        "UPDATE users SET is_blacklisted = ? WHERE telegram_id = ?",
+        (int(status), telegram_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_all_users() -> list[dict]:
+    """Получить список всех пользователей."""
+    conn = get_connection()
+    rows = conn.execute("SELECT * FROM users ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def add_expense(user_id: int, amount: float, description: str,

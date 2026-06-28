@@ -56,6 +56,16 @@ ALLOWED_USERS: set[int] = (
     if _raw_users else set()
 )
 
+# Список администраторов (имеют доступ к админке)
+_raw_admins = get_or_prompt("ADMIN_USERS", "🔑 Введите Telegram ID администраторов через запятую (для доступа к админке)", allow_empty=True)
+ADMIN_USERS: set[int] = (
+    {int(uid.strip()) for uid in _raw_admins.split(",") if uid.strip()}
+    if _raw_admins else set()
+)
+# Если ADMIN_USERS не заданы, но задан ALLOWED_USERS, считаем первого из списка админом
+if not ADMIN_USERS and ALLOWED_USERS:
+    ADMIN_USERS = {list(ALLOWED_USERS)[0]}
+
 # Google Gemini AI
 GEMINI_API_KEY = get_or_prompt("GEMINI_API_KEY", "🔑 Введите API-ключ Google Gemini (получить на aistudio.google.com)")
 GEMINI_MODEL = get_or_prompt("GEMINI_MODEL", "🧠 Введите название модели Gemini (или впишите свою кастомную)", "gemini-1.5-flash")
